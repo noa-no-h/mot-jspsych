@@ -35,7 +35,19 @@ var MOTMovement = (function (jspsych) {
       },
       milisecondsFixationCross: {
         type: jspsych.ParameterType.INT,
-        default: 2000
+        default: 1000
+      },
+      milisecondsCirclesAndCross: {
+        type: jspsych.ParameterType.INT,
+        default: 1000
+     },
+      milisecondsFlashingBalls: {
+        type: jspsych.ParameterType.INT,
+        default: 1000
+      },
+      milisecondsMotion: {
+        type: jspsych.ParameterType.INT,
+        default: 3000
       }
     }
   };
@@ -46,7 +58,26 @@ var MOTMovement = (function (jspsych) {
     }
     trial(display_element, trial) {
 
-        
+    //setup parameters here
+    let phaseStartTime;
+    let alreadySetPhase = false;
+    //i put the parameter let circles = createCircles(); below because it 
+    //needs to go after the circle class is defined
+
+
+    // Create and append canvas
+    const canvas = document.createElement('canvas');
+    canvas.id = 'gameCanvas';
+    //canvas.width = 800;
+    //canvas.height = 600;
+    console.log("canvas.width: " + canvas.width);
+    display_element.appendChild(canvas);
+    canvas.addEventListener("click", canvasClickHandler);
+    document.addEventListener("keydown", keydownHandler);
+    canvas.addEventListener('mousemove', canvasMouseMoveHandler);
+    // Get context
+    const ctx = canvas.getContext('2d');
+
 
     // Use the parameters like trial.totalCircleNumber, trial.secondsBeforeFlash, etc.
     class Circle {
@@ -84,15 +115,16 @@ var MOTMovement = (function (jspsych) {
       }
 
     function createCircles() {
-    let circles = [];
+    
+        let circles = [];
 
     // Create distractor balls
-    for (let i = 0; i < distractorBalls[level]; i++) {
+    for (let i = 0; i < trial.totalCircleNumber - trial.flashingCircleNumber; i++) {
         let newCircle = new Circle(
         30 + Math.random() * (canvas.width - 60),
         30 + Math.random() * (canvas.height - 60),
-        1 + Math.random() * speed,
-        1 + Math.random() * speed,
+        1 + Math.random() * trial.speed,
+        1 + Math.random() * trial.speed,
         "white"
         );
         while (circles.some(c => circlesOverlap(c, newCircle))) {
@@ -103,12 +135,12 @@ var MOTMovement = (function (jspsych) {
     }
 
     // Create flashing balls
-    for (let i = 0; i < flashingBalls[level]; i++) {
+    for (let i = 0; i < trial.flashingCircleNumber; i++) {
         let newCircle = new Circle(
         30 + Math.random() * (canvas.width - 60),
         30 + Math.random() * (canvas.height - 60),
-        1 + Math.random() * speed,
-        1 + Math.random() * speed,
+        1 + Math.random() * trial.speed,
+        1 + Math.random() * trial.speed,
         "green"
         );
         while (circles.some(c => circlesOverlap(c, newCircle))) {
@@ -120,6 +152,8 @@ var MOTMovement = (function (jspsych) {
 
     return circles;
     }
+
+    let circles = createCircles();
 
     //Function to check for collisions between circles and canvas bounds
     function circleCollision() {
@@ -178,7 +212,7 @@ var MOTMovement = (function (jspsych) {
             selectedQueue = selectedQueue.filter(c => c !== circle);
             } else {
             // If the circle is not selected, select it and add it to the queue
-            if (selectedQueue.length === flashingBalls[level]) {
+            if (selectedQueue.length === trial.flashingCircleNumber) {
                 // If there are already n circles in the queue, where n is the level's number of flashingBalls,
                 // deselect and remove the first one
                 selectedQueue[0].isSelected = false;
@@ -207,13 +241,13 @@ var MOTMovement = (function (jspsych) {
                 }
             };
     
-            if (totalSelections < flashingBalls[level]){
+            if (totalSelections < trial.flashingCircleNumber){
                 showSelectMoreText = true; //this will have its effect in the game loop part for phase 5
                 
             }
             else{
                 // Level progression and regression
-                if (correctSelections === flashingBalls[level]) {
+                if (correctSelections === trial.flashingCircleNumber) {
                     // If all flashing balls were correctly selected, move to the next level
                     level = Math.min(level + 1, flashingBalls.length - 1);
                     consecutive += 1;
@@ -272,37 +306,47 @@ var MOTMovement = (function (jspsych) {
 
     
 
-    function updateTrial() {
+    function TrialLoop() {
 
-        console.log('in update trial')
         
         if (phase == 'fixationCross'){
-            let phaseStartTime = performance.now();
-            drawCross();
 
-            // after milisecondsFixationCross, move to phase drawCirclesAndCross
-            jsPsych.pluginAPI.setTimeout(() => {
-                phase = 'drawCirclesAndCross';
-            }, trial.milisecondsFixationCross);
+            //make sure we don't reset the phase start time every loop
+            if (alreadySetPhase == false){
+                phaseStartTime = performance.now();
+                alreadySetPhase = true;
+            }
+
+            console.log('in update trial. phase is ' + phase + 
+        ' trial.milisecondsFixationCross is ' + trial.milisecondsFixationCross + 
+        'phaseStartTime - performance.now() is ' + (performance.now() - phaseStartTime));
+
+            if (performance.now() - phaseStartTime > trial.milisecondsFixationCross){
+                phase = 'circlesAndCross';
+                phaseStartTime = performance.now();
+            }
         }
         
 
-        if (phase == 'drawCirclesAndCross'){
-            phaseStartTime = performance.now();
+        if (phase == 'circlesAndCross'){
+
+            console.log("in circlesAndCross")
+
             circles.forEach((circle) => {
-                circle.color = "white";
+                circle.color = "black";
                 circle.draw(ctx);
                 });
             
-            // after milisecondsFixationCross, move to phase drawFlashingBalls
-            jsPsych.pluginAPI.setTimeout(() => {
-                phase = 'drawFlashingBalls';
-            }, trial.milisecondsCrossAndCircles);
+            // after milisecondsFixationCross, move to phase flashingBalls
+            if (performance.now() - phaseStartTime > trial.milisecondsCirclesAndCross){
+                phase = 'flashingBalls';
+                phaseStartTime = performance.now();
+            }
         }
         
 
-        if (phase == 'drawFlashingBalls'){
-            phaseStartTime = performance.now();
+        if (phase == 'flashingBalls'){
+
             
             //code to flash circles green
             circles.forEach((circle) => {
@@ -313,21 +357,26 @@ var MOTMovement = (function (jspsych) {
                 });
             
             // after milisecondsFlashingBalls, move to phase motion
-            jsPsych.pluginAPI.setTimeout(() => {
+            if (performance.now() - phaseStartTime > trial.milisecondsFlashingBalls){
                 phase = 'motion';
-            }, trial.milisecondsFlashingBalls);
+                phaseStartTime = performance.now();
+            }
         }
 
         if (phase == 'motion'){
-            phaseStartTime = performance.now();
+
+
             circleCollision();
             circleBounce();
             
-            // after milisecondsMotion, move to phase question
-            jsPsych.pluginAPI.setTimeout(() => {
+            // after milisecondsMotion, move to phase motion
+            if (performance.now() - phaseStartTime > trial.milisecondsMotion){
                 phase = 'question';
-            }, trial.milisecondsMotion);
+                phaseStartTime = performance.now();
+            }
         }
+
+        requestAnimationFrame(TrialLoop);
 
     }
 
@@ -347,7 +396,7 @@ var MOTMovement = (function (jspsych) {
 
     // Call updateTrial() to start the trial logic
     let phase = "fixationCross"
-    updateTrial();
+    TrialLoop();
 
     // Call endTrial() after the trial duration
     setTimeout(endTrial, trial.totalDuration); // Trial duration in milliseconds
