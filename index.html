@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>MOT</title>
+    <script src="https://unpkg.com/jspsych@7.3.3"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-html-keyboard-response@1.1.2"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-html-button-response@1.0.0"></script>
+    <link href="https://unpkg.com/jspsych@7.3.3/css/jspsych.css" rel="stylesheet" type="text/css" />
+    <script src="https://unpkg.com/@jspsych/plugin-instructions@1.1.3"></script>
+</head>
+  <body></body>
+  <script>
+
+/* initialize jsPsych */
+var jsPsych = initJsPsych({
+      on_finish: function() {
+        jsPsych.data.displayData();
+      }
+    });
+    
+// Create a jsPsych timeline
+var timeline = [];
+
+//initialize game variables
+
+// Level configurations
+let flashingBalls = [
+2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 
+7, 7, 7, 7, 7, 7, 8, 8, 8, 8, 8, 8, 9, 9, 9, 9, 9, 9, 10, 10
+]; // flashing balls for each level
+
+let distractorBalls = [
+1, 2, 3, 1, 2, 3, 2, 3, 4, 2, 3, 4, 3, 4, 5, 3, 4, 5, 4, 5, 6, 4, 5, 6, 5, 6, 7, 5, 6, 7, 
+6, 7, 8, 6, 7, 8, 7, 8, 9, 7, 8, 9, 8, 9, 10, 8, 9, 10, 9, 10
+]; // distractor balls for each level
+
+let speeds = [5, 5, 5, 7, 7, 7, 9, 9, 9, 5, 5, 5, 7, 7, 7, 9, 9, 9, 5, 5, 5, 7, 7, 7, 9,
+9, 9, 5, 5, 5, 7, 7, 7, 9, 9, 9, 5, 5, 5, 7, 7, 7, 9, 9, 9, 5, 5, 5, 7, 7]
+; // speeds for each level
+
+let level = 0; // Current level
+let tutorial = true; // Is tutorial active?
+let dprimesArray = []; // Array to store d-prime values (the main way we are keeping track of scores)
+let rowAlreadyAdded = false; // Flag to prevent the addition of duplicate rows
+let showSelectMoreText = false; // flag to show select more circles warning when you haven't selected enough
+let alreadyEnteredID = false; // they will only enter their ID once
+let response_time = 0;
+let timeOfQuestion = 0;
+let timeOfResponse = 0;
+let alreadyCheckedTimeOfQuestion = false;
+let alreadyCheckedTimeOfAnswer = false;
+let practice = true;
+let timesLooped = -1
+let consecutive = 0;
+let score = 0;
+
+// Add an instruction text phase
+firstInstructions = {
+  type: jsPsychInstructions,
+  pages: ["You will first see a cross at the center of the screen." + 
+            "Please focus your gaze to that cross. <br><br> There will be " + (flashingBalls[level] + distractorBalls[level]) + 
+            " circles appearing on the screen, " + flashingBalls[level] + 
+            " of them will flash in GREEN.<br>" + "The cross will disappear, and all circles will start to move." + 
+            " Keep track of those " + flashingBalls[level]  + 
+            " flashed circles.<br><br> When the circles stop moving, select which circles you've been tracking by clicking " +
+            "them. <br>When you have made your selection, press the SPACEBAR to submit your selection.<br><br>" +
+            "Click 'next' to start when you are ready. <br><br>If you need to stop, let the experimenter know or press ESCAPE if you are in the middle of a trial. "],
+  show_clickable_nav: true,
+  button_label_next: 'Next',
+  on_finish: function(data){
+    // Perform any necessary actions at the end of this phase
+  }
+};
+
+timeline.push(firstInstructions);
+
+// cross instructions
+crossInstructions = {
+  type: jsPsychHtmlButtonResponse,
+  stimulus: "<p>You will first see a cross at the center of your screen. Please focus your gaze to that cross. Click next when you are ready to continue. </p>" +
+            '<p style="font-size:48px;">+</p>',
+  choices: ['Next']
+};
+
+timeline.push(crossInstructions);
+
+
+// circle instructions
+circleInstructions = {
+  type: jsPsychHtmlButtonResponse,
+  stimulus: "<p>Now, " + (flashingBalls[level] + distractorBalls[level]) + " circles will appear randomly around the screen. " + flashingBalls[level] + " random "
+    + "circles will flash briefly. Remember which circles flashed. The cross will disappear, and all circles " +
+    "will start moving when the flashing stops.Click next when you are ready to continue. </p>" +
+            '<p style="font-size:48px;">+</p>',
+  choices: ['Next']
+};
+
+timeline.push(circleInstructions);
+
+//cross appears
+var fixation = {
+  type: html-keyboard-response,
+  stimulus: '<div style="font-size:60px;">+</div>',
+  choices: "NO_KEYS",
+  trial_duration: 1000,
+}
+
+timeline.push(fixation);
+
+
+//circles appear
+
+//circles flash
+
+//circles start moving
+
+/* start the experiment */
+jsPsych.run(timeline);
+
+  </script>
+</html>
