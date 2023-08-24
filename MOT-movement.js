@@ -35,7 +35,7 @@ var MOTMovement = (function (jspsych) {
       },
       milisecondsFixationCross: {
         type: jspsych.ParameterType.INT,
-        default: 1000
+        default: 2000
       },
       milisecondsCirclesAndCross: {
         type: jspsych.ParameterType.INT,
@@ -48,7 +48,11 @@ var MOTMovement = (function (jspsych) {
       milisecondsMotion: {
         type: jspsych.ParameterType.INT,
         default: 3000
-      }
+      },
+      circleRadius: {
+        type: jspsych.ParameterType.INT,
+        default: 30
+      },
     }
   };
 
@@ -81,11 +85,12 @@ var MOTMovement = (function (jspsych) {
 
     // Use the parameters like trial.totalCircleNumber, trial.secondsBeforeFlash, etc.
     class Circle {
-        constructor(x, y, dx, dy, color) {
+        constructor(x, y, dx, dy, color, radius) {
             this.x = x;
             this.y = y;
             this.dx = dx;
             this.dy = dy;
+            this.radius = radius;
             this.color = color;
             this.origcolor = color;
             this.isSelected = false; // Whether the circle is selected or not
@@ -93,7 +98,7 @@ var MOTMovement = (function (jspsych) {
     
         draw(ctx) {
             ctx.beginPath();
-            ctx.arc(this.x, this.y, 30, 0, Math.PI * 2, false);
+            ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2, false);
             ctx.fillStyle = this.color;
             ctx.fill();
             ctx.closePath();
@@ -111,8 +116,17 @@ var MOTMovement = (function (jspsych) {
         let dx = circle2.x - circle1.x;
         let dy = circle2.y - circle1.y;
         let distance = Math.sqrt(dx * dx + dy * dy);
-        return distance <= 60;
+        return distance <= 2 * trial.circleRadius;
       }
+
+    // Function to check if a circle overlaps with the cross
+    function overlapsWithCross(circle, crossX, crossY, crossSize) {
+        return Math.abs(circle.x - crossX) < (crossSize + circle.radius) && Math.abs(circle.y - crossY) < (crossSize + circle.radius);
+    }
+
+    const crossX = canvas.width / 2;
+    const crossY = canvas.height / 2;
+    const crossSize = 30; // Adjust this based on the size of your cross
 
     function createCircles() {
     
@@ -120,35 +134,36 @@ var MOTMovement = (function (jspsych) {
 
     // Create distractor balls
     for (let i = 0; i < trial.totalCircleNumber - trial.flashingCircleNumber; i++) {
-        let newCircle = new Circle(
-        30 + Math.random() * (canvas.width - 60),
-        30 + Math.random() * (canvas.height - 60),
-        1 + Math.random() * trial.speed,
-        1 + Math.random() * trial.speed,
-        "white"
-        );
-        while (circles.some(c => circlesOverlap(c, newCircle))) {
-        newCircle.x = 30 + Math.random() * (canvas.width - 60);
-        newCircle.y = 30 + Math.random() * (canvas.height - 60);
-        }
+        let newCircle;
+        do {
+            newCircle = new Circle(
+                trial.circleRadius + Math.random() * (canvas.width - 2 * trial.circleRadius),
+                trial.circleRadius + Math.random() * (canvas.height - 2 * trial.circleRadius),
+                1 + Math.random() * trial.speed,
+                1 + Math.random() * trial.speed,
+                "white",
+                trial.circleRadius
+            );
+        } while (circles.some(c => circlesOverlap(c, newCircle)) || overlapsWithCross(newCircle, crossX, crossY, crossSize));
         circles.push(newCircle);
     }
 
     // Create flashing balls
     for (let i = 0; i < trial.flashingCircleNumber; i++) {
-        let newCircle = new Circle(
-        30 + Math.random() * (canvas.width - 60),
-        30 + Math.random() * (canvas.height - 60),
-        1 + Math.random() * trial.speed,
-        1 + Math.random() * trial.speed,
-        "green"
-        );
-        while (circles.some(c => circlesOverlap(c, newCircle))) {
-        newCircle.x = 30 + Math.random() * (canvas.width - 60);
-        newCircle.y = 30 + Math.random() * (canvas.height - 60);
-        }
+        let newCircle;
+        do {
+            newCircle = new Circle(
+                trial.circleRadius + Math.random() * (canvas.width - 2 * trial.circleRadius),
+                trial.circleRadius + Math.random() * (canvas.height - 2 * trial.circleRadius),
+                1 + Math.random() * trial.speed,
+                1 + Math.random() * trial.speed,
+                "green",
+                trial.circleRadius
+            );
+        } while (circles.some(c => circlesOverlap(c, newCircle)) || overlapsWithCross(newCircle, crossX, crossY, crossSize));
         circles.push(newCircle);
     }
+
 
     return circles;
     }
@@ -158,14 +173,14 @@ var MOTMovement = (function (jspsych) {
     //Function to check for collisions between circles and canvas bounds
     function circleCollision() {
         circles.forEach((circle) => {
-          if (circle.x + circle.dx < 30 || circle.x + circle.dx > canvas.width - 30) {
+          if (circle.x + circle.dx < trial.circleRadius || circle.x + circle.dx > canvas.width - trial.circleRadius) {
             circle.dx = -circle.dx;
           }
-          if (circle.y + circle.dy < 30 || circle.y + circle.dy > canvas.height - 30) {
+          if (circle.y + circle.dy < trial.circleRadius || circle.y + circle.dy > canvas.height - trial.circleRadius) {
             circle.dy = -circle.dy;
           }
         });
-      }
+      }      
 
     function circleBounce() {
     for (let i = 0; i < circles.length; i++) {
@@ -174,7 +189,7 @@ var MOTMovement = (function (jspsych) {
         let dy = circles[j].y - circles[i].y;
         let distance = Math.sqrt(dx * dx + dy * dy);
 
-        if (distance <= 60) {
+        if (distance <= 2 * trial.circleRadius) {
             // Swap the circles' speed in x-axis
             let temp_dx = circles[i].dx;
             circles[i].dx = circles[j].dx;
@@ -205,7 +220,7 @@ var MOTMovement = (function (jspsych) {
         circles.forEach((circle) => {
         let dx = mouseX - circle.x;
         let dy = mouseY - circle.y;
-        if (Math.sqrt(dx * dx + dy * dy) <= 30) {
+        if (Math.sqrt(dx * dx + dy * dy) <= trial.circleRadius) {
             if (circle.isSelected) {
             // If the circle is already selected, deselect it and remove it from the queue
             circle.isSelected = false;
@@ -278,7 +293,7 @@ var MOTMovement = (function (jspsych) {
         circles.forEach((circle) => {
         let dx = mouseX - circle.x;
         let dy = mouseY - circle.y;
-        if (Math.sqrt(dx * dx + dy * dy) <= 30) {
+        if (Math.sqrt(dx * dx + dy * dy) <= trial.circleRadius) {
             // Set this circle as the currently hovered circle and change its color
             hoveredCircle = circle;
             hoveredCircle.color = 'teal';
@@ -317,7 +332,9 @@ var MOTMovement = (function (jspsych) {
                 alreadySetPhase = true;
             }
 
-            console.log('in update trial. phase is ' + phase + 
+            drawCross();
+
+            console.log('in TrialLoop. phase is ' + phase + 
         ' trial.milisecondsFixationCross is ' + trial.milisecondsFixationCross + 
         'phaseStartTime - performance.now() is ' + (performance.now() - phaseStartTime));
 
@@ -347,7 +364,6 @@ var MOTMovement = (function (jspsych) {
 
         if (phase == 'flashingBalls'){
 
-            
             //code to flash circles green
             circles.forEach((circle) => {
                 if (circle.origcolor === "green") {
@@ -365,18 +381,27 @@ var MOTMovement = (function (jspsych) {
 
         if (phase == 'motion'){
 
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            console.log("in motion")
 
             circleCollision();
             circleBounce();
-            
+
+            circles.forEach((circle) => {
+            circle.color = "black";
+            circle.update();
+            circle.draw(ctx);
+            });
+                
             // after milisecondsMotion, move to phase motion
             if (performance.now() - phaseStartTime > trial.milisecondsMotion){
                 phase = 'question';
                 phaseStartTime = performance.now();
             }
-        }
+    }
 
-        requestAnimationFrame(TrialLoop);
+    requestAnimationFrame(TrialLoop);
 
     }
 
