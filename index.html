@@ -7,12 +7,18 @@
     <script src="https://unpkg.com/@jspsych/plugin-html-button-response@1.0.0"></script>
     <link href="https://unpkg.com/jspsych@7.3.3/css/jspsych.css" rel="stylesheet" type="text/css" />
     <script src="https://unpkg.com/@jspsych/plugin-instructions@1.1.3"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-call-function@1.1.2"></script>  
+    <script src="https://unpkg.com/@jspsych/plugin-fullscreen@1.2.0"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-survey@0.2.1"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-survey-html-form@1.0.2"></script>
+    <script src="./MOTAnimation.js"></script>
 </head>
   <body></body>
   <script>
 
 /* initialize jsPsych */
 var jsPsych = initJsPsych({
+      override_safe_mode: true,
       on_finish: function() {
         jsPsych.data.displayData();
       }
@@ -22,6 +28,13 @@ var jsPsych = initJsPsych({
 var timeline = [];
 
 //initialize game variables
+
+function correctAudioPlay() {
+  var correctSound = new Audio('https://drive.google.com/uc?export=download&id=1orrtFi9L31zRWFeM5x_Y3129XlLOMn3v');
+  correctSound.play();}
+function incorrectAudioPlay() {
+  var incorrectSound = new Audio('https://drive.google.com/uc?export=download&id=1uCbx15jBq3HU6krKt1ZgHttGhjwozFvR');
+  incorrectSound.play();}
 
 // Level configurations
 let flashingBalls = [
@@ -53,6 +66,40 @@ let practice = true;
 let timesLooped = -1
 let consecutive = 0;
 let score = 0;
+let startTime = Date.now();
+
+function calculateScore(){
+    return score + consecutive + Math.floor(level / 2)
+}
+
+////////////////
+    /* Fullscreen */
+    ////////////////
+
+    /*
+    For the best viewing experience,
+    remaining in fullscreen is highly
+    recommended. Otherwise, the spacing 
+    of the squares might be altered 
+    and/or the available windowing for
+    the squares to appear might be too
+    small.
+    */
+
+    var enter_fullscreen = {
+      type: jsPsychFullscreen,
+      fullscreen_mode: true,
+      message: `<p><b>It is very important that you complete this task in fullscreen mode.</b></p><p>The study will automatically exit fullscreen mode once this task is complete.</p><p>Click on the button below to enter fullscreen mode.</p>`,
+      button_label: `Enter fullscreen`
+    }
+
+    /* Exit Fullscreen Mode (for when the task completes) */
+
+        var exit_fullscreen = {
+          type: jsPsychFullscreen,
+          fullscreen_mode: false,
+          delay_after: 0
+        }
 
 // Add an instruction text phase
 firstInstructions = {
@@ -67,12 +114,8 @@ firstInstructions = {
             "Click 'next' to start when you are ready. <br><br>If you need to stop, let the experimenter know or press ESCAPE if you are in the middle of a trial. "],
   show_clickable_nav: true,
   button_label_next: 'Next',
-  on_finish: function(data){
-    // Perform any necessary actions at the end of this phase
-  }
 };
 
-timeline.push(firstInstructions);
 
 // cross instructions
 crossInstructions = {
@@ -82,7 +125,6 @@ crossInstructions = {
   choices: ['Next']
 };
 
-timeline.push(crossInstructions);
 
 
 // circle instructions
@@ -95,27 +137,110 @@ circleInstructions = {
   choices: ['Next']
 };
 
-timeline.push(circleInstructions);
 
-//cross appears
-var fixation = {
-  type: html-keyboard-response,
-  stimulus: '<div style="font-size:60px;">+</div>',
-  choices: "NO_KEYS",
-  trial_duration: 1000,
-}
-
-timeline.push(fixation);
+var MOT = {
+  type: MOTAnimation,
+  totalCircleNumber: flashingBalls[level] + distractorBalls[level],
+  flashingCircleNumber: flashingBalls[level],
+  speed: speeds[level],
+  // Include parameters as needed
+};
 
 
-//circles appear
+var feedbackScreen = {
+    type: jsPsychHtmlKeyboardResponse,
+    stimulus: function(){
+        var lastTrialCorrect = jsPsych.data.get().last(1).values()[0].win;
+        var totalCircleNumber = jsPsych.data.get().last(1).values()[0].totalCircles;
+        var flashingCircleNumber = jsPsych.data.get().last(1).values()[0].numberTargets;
+        var numberCorrectSelections = jsPsych.data.get().last(1).values()[0].numberCorrectSelections;
+        
+        var text = "You got " + numberCorrectSelections + " out of " + flashingCircleNumber + " correct!"
+        
+        if(lastTrialCorrect){
+            level = Math.min(level + 1, flashingBalls.length - 1);
+            consecutive += 1;
+            text += "<br> Moving up to level " + level + ".";
+            correctAudioPlay();
+             } 
+        else {
+            // If at least one flashing ball was not correctly selected, move to the level three previous
+            level = Math.max(level - 3, 0);
+            consecutive = Math.floor(consecutive / 2)  
+            text += "<br> Moving down to level " + level + "."; 
+            incorrectAudioPlay();
+             }
 
-//circles flash
+        score = calculateScore();
+        text += "<br>Your score:" + score;
+        
+        return text
+        },
+    choices: "NO_KEYS",  // No key press is allowed to end the trial
+    trial_duration: 3000,
+    data: function(){
+        return {
+            'score': score,
+            'level': level,
+            'consecutive': consecutive
+        }
+    }
 
-//circles start moving
+};
+
+var generalSurvey = {
+  type: jsPsychSurvey,
+  pages: [
+    [
+      {
+        type: 'text',
+        prompt: 'What is your age?',
+      },
+      {
+        type: 'multi-choice',
+        prompt: "What year are you in the ATC program:", 
+        name: 'year', 
+        options: ['Freshman', 'Sophomore', 'Junior','Senior','Alumni'], 
+        required: true
+      }, 
+      {
+        type: 'text',
+        prompt: "At what age (approximately) did you first begin ATC instruction?", 
+        required: true
+      }
+    ]
+  ],
+};
+
+var positionsQuestions = {
+  type: jsPsychSurveyHtmlForm,
+  preamble: '<p>What positions have you been trained in? </b> Please include for each position the airport location, </b> mission location, or simulator used when detailing your experience with </b> each position as well as the number of years you have actively engaged in</b>performing this position for each. </p>',
+  html: '<p> I am feeling <input name="first" type="text" />, <input name="second" type="text" />, and <input name="third" type="text" />.</p>'
+};
+
+// Looping timeline
+var loopTimeline = {
+  timeline: [MOT, feedbackScreen],
+  loop_function: function(data){
+    console.log("One loop iteration finished.");
+    let currentTime = Date.now();
+    let elapsed = (currentTime - startTime) / 1000 / 60;  // elapsed time in minutes
+    console.log(elapsed);
+    return elapsed < 1;  // keep looping until 20 minutes have passed
+    } //js knows loop_function tells it when to stop
+};
+
+
+
+// Initialize the experiment with a timeline
+
+var fullTimeline = [loopTimeline];
+
+//timeline = [firstInstructions, crossInstructions, circleInstructions, MOT, feedbackScreen]
+
 
 /* start the experiment */
-jsPsych.run(timeline);
+jsPsych.run(fullTimeline);
 
   </script>
 </html>

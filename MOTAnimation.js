@@ -1,5 +1,5 @@
-var MOTMovement = (function (jspsych) {
-    "use strict";
+var MOTAnimation = (function (jspsych) {
+    //"use strict";
   
     const info = {
     name: 'MOT-movement',
@@ -56,7 +56,7 @@ var MOTMovement = (function (jspsych) {
     }
   };
 
-  class MOTMovement {
+  class MOTAnimation {
     constructor(jsPsych) {
         this.jsPsych = jsPsych;
     }
@@ -65,6 +65,8 @@ var MOTMovement = (function (jspsych) {
     //setup parameters here
     let phaseStartTime;
     let alreadySetPhase = false;
+    let alreadyCheckedTimeOfQuestion = false;
+    let correctSelections = 0;
     //i put the parameter let circles = createCircles(); below because it 
     //needs to go after the circle class is defined
 
@@ -74,13 +76,17 @@ var MOTMovement = (function (jspsych) {
     canvas.id = 'gameCanvas';
     //canvas.width = 800;
     //canvas.height = 600;
-    console.log("canvas.width: " + canvas.width);
     display_element.appendChild(canvas);
-    canvas.addEventListener("click", canvasClickHandler);
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    document.addEventListener("click", canvasClickHandler);
     document.addEventListener("keydown", keydownHandler);
-    canvas.addEventListener('mousemove', canvasMouseMoveHandler);
+    document.addEventListener('mousemove', canvasMouseMoveHandler);
     // Get context
     const ctx = canvas.getContext('2d');
+
+    resizeCanvas();
+    window.addEventListener("resize", resizeCanvas);
 
 
     // Use the parameters like trial.totalCircleNumber, trial.secondsBeforeFlash, etc.
@@ -212,7 +218,8 @@ var MOTMovement = (function (jspsych) {
     let selectedQueue = []
     let hoveredCircle = null;
     function canvasClickHandler(event) {
-    if (phase === 5) {
+    if (phase === 'question') {
+        console.log("in canvasClickHandler")
         let rect = canvas.getBoundingClientRect();
         let mouseX = event.clientX - rect.left;
         let mouseY = event.clientY - rect.top;
@@ -242,10 +249,11 @@ var MOTMovement = (function (jspsych) {
     }
 
     function keydownHandler(event) {
-        if (phase === 5 && event.key === " ") {
+        if (phase === 'question' && event.key === " ") {
+            console.log("in keydownHandler")
             // Count correct circle selections and proceed to phase 4
-            correctSelections = 0;
-            totalSelections = 0;
+            //correctSelections = 0 //global
+            let totalSelections = 0;
             for (const [i, circle] of circles.entries()){
                 if (circle.isSelected) {
                     totalSelections += 1;
@@ -261,32 +269,21 @@ var MOTMovement = (function (jspsych) {
                 
             }
             else{
-                // Level progression and regression
-                if (correctSelections === trial.flashingCircleNumber) {
-                    // If all flashing balls were correctly selected, move to the next level
-                    level = Math.min(level + 1, flashingBalls.length - 1);
-                    consecutive += 1;
-                } else {
-                    // If at least one flashing ball was not correctly selected, move to the level three previous
-                    level = Math.max(level - 3, 0);
-                    consecutive = Math.floor(consecutive / 2)
-                }
-    
-                timeOfResponse = performance.now();
-                transitionToPhase(6);
+                endTrial();
             }
                         
         }
     }
     function canvasMouseMoveHandler(event) {
-    if (phase === 5) {
+    if (phase === 'question') {
+        console.log("in canvasMouseMoveHandler")
         let rect = canvas.getBoundingClientRect();
         let mouseX = event.clientX - rect.left;
         let mouseY = event.clientY - rect.top;
 
         // Reset color of the previously hovered circle
         if (hoveredCircle) {
-        hoveredCircle.color = 'white'; 
+        hoveredCircle.color = 'black'; 
         hoveredCircle = null;
         }
 
@@ -296,6 +293,7 @@ var MOTMovement = (function (jspsych) {
         if (Math.sqrt(dx * dx + dy * dy) <= trial.circleRadius) {
             // Set this circle as the currently hovered circle and change its color
             hoveredCircle = circle;
+            console.log("in canvasMouseMoveHandler. hoveredCircle is " + hoveredCircle)
             hoveredCircle.color = 'teal';
         }
         });
@@ -318,10 +316,14 @@ var MOTMovement = (function (jspsych) {
         ctx.closePath();
       }
     
-
+    function resizeCanvas() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+      }
     
 
     function TrialLoop() {
+
 
         
         if (phase == 'fixationCross'){
@@ -399,36 +401,92 @@ var MOTMovement = (function (jspsych) {
                 phase = 'question';
                 phaseStartTime = performance.now();
             }
-    }
+        }
+
+        if (phase == 'question'){
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            circles.forEach((circle) => {
+                circle.draw(ctx);
+                if (circle.isSelected) {
+                  circle.color = "red";
+                }
+              });
+
+            if (alreadyCheckedTimeOfQuestion === false){
+                let timeOfQuestion = performance.now();
+                showSelectMoreText = false;
+                alreadyCheckedTimeOfQuestion = true;
+            }
+
+            
+        
+            // write out the instructions
+            // Set the font size and style
+            ctx.font = '24px Open Sans';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = 'grey';
+
+            // Your text, split into lines
+            var text = "Select the circles you've been tracking by clicking on them.\nPress space to submit your selection.";
+            if (showSelectMoreText === true) {
+                text += "\nPlease select at least " + trial.flashingCircleNumber + " circles to proceed.";
+            }
+
+            // Calculate the starting y-position
+            var lines = text.split('\n');
+            var lineheight = 20;
+            var yStart = (canvas.height - (lines.length * lineheight)) / 2 + lineheight / 2; // Center y
+
+            // Initial position for drawing the text
+            var x = canvas.width / 2; // Center x
+
+            // Loop through the lines and draw them one at a time
+            for (var i = 0; i < lines.length; i++) {
+                var y = yStart + (i * lineheight);
+                ctx.fillText(lines[i], x, y);
+            }
+
+
+        }
 
     requestAnimationFrame(TrialLoop);
 
     }
 
     function endTrial() {
+        timeOfResponse = performance.now();
+
       // Perform any cleanup or data collection here
       var trial_data = {
-        // Add relevant data properties here
-      };
+        "reactionTime": timeOfResponse - timeOfQuestion,
+        "totalCircles": trial.totalCircleNumber,
+        "numberTargets": trial.flashingCircleNumber,
+        "numberCorrectSelections": correctSelections,
+        "win": correctSelections == trial.flashingCircleNumber
+        };
+
 
       // Remove event listeners
-      canvas.removeEventListener('click', canvasClickHandler);
-      canvas.removeEventListener('mousemove', canvasMouseMoveHandler);
+      document.removeEventListener('click', canvasClickHandler);
+      document.removeEventListener('keydown', keydownHandler);
+      document.removeEventListener('mousemove', canvasMouseMoveHandler);
 
       // End the trial
-      this.jsPsych.finishTrial(trial_data);
+      jsPsych.finishTrial(trial_data);
+
     }
 
     // Call updateTrial() to start the trial logic
     let phase = "fixationCross"
     TrialLoop();
 
-    // Call endTrial() after the trial duration
-    setTimeout(endTrial, trial.totalDuration); // Trial duration in milliseconds
+    
   }
 }
 
   // Define your other functions here
-  MOTMovement.info = info;
-  return MOTMovement;
+  MOTAnimation.info = info;
+  return MOTAnimation;
 })(jsPsychModule);

@@ -1,44 +1,139 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>MOT</title>
     <script src="https://unpkg.com/jspsych@7.3.3"></script>
     <script src="https://unpkg.com/@jspsych/plugin-html-keyboard-response@1.1.2"></script>
-    <script src="https://unpkg.com/@jspsych/plugin-html-button-response@1.0.0"></script>
     <link href="https://unpkg.com/jspsych@7.3.3/css/jspsych.css" rel="stylesheet" type="text/css" />
     <script src="https://unpkg.com/@jspsych/plugin-instructions@1.1.3"></script>
-    <script src="./MOT-movement.js"></script>
-    <script src="./mot-ashalenko.js"></script>
-
-    
-
+    <script src="https://unpkg.com/@jspsych/plugin-call-function@1.1.2"></script>  
+    <script src="https://unpkg.com/@jspsych/plugin-html-button-response@1.0.0"></script>
+    <script src="./MOTAnimation.js"></script>
 
 </head>
   <body></body>
   <script>
 
+    var jsPsych = initJsPsych({
+      default_iti: 200,
+      on_finish: function() {
+        jsPsych.data.displayData();
+      }
+    });
+
+    //initialize game variables
+
+// Level configurations
+let flashingBalls = [
+2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 
+7, 7, 7, 7, 7, 7, 8, 8, 8, 8, 8, 8, 9, 9, 9, 9, 9, 9, 10, 10
+]; // flashing balls for each level
+
+let distractorBalls = [
+1, 2, 3, 1, 2, 3, 2, 3, 4, 2, 3, 4, 3, 4, 5, 3, 4, 5, 4, 5, 6, 4, 5, 6, 5, 6, 7, 5, 6, 7, 
+6, 7, 8, 6, 7, 8, 7, 8, 9, 7, 8, 9, 8, 9, 10, 8, 9, 10, 9, 10
+]; // distractor balls for each level
+
+let speeds = [5, 5, 5, 7, 7, 7, 9, 9, 9, 5, 5, 5, 7, 7, 7, 9, 9, 9, 5, 5, 5, 7, 7, 7, 9,
+9, 9, 5, 5, 5, 7, 7, 7, 9, 9, 9, 5, 5, 5, 7, 7, 7, 9, 9, 9, 5, 5, 5, 7, 7]
+; // speeds for each level
+
+let level = 0; // Current level
+let tutorial = true; // Is tutorial active?
+let dprimesArray = []; // Array to store d-prime values (the main way we are keeping track of scores)
+let rowAlreadyAdded = false; // Flag to prevent the addition of duplicate rows
+let showSelectMoreText = false; // flag to show select more circles warning when you haven't selected enough
+let alreadyEnteredID = false; // they will only enter their ID once
+let response_time = 0;
+let timeOfQuestion = 0;
+let timeOfResponse = 0;
+let alreadyCheckedTimeOfQuestion = false;
+let alreadyCheckedTimeOfAnswer = false;
+let practice = true;
+let timesLooped = -1
+let consecutive = 0;
+let score = 0;
+let startTime = Date.now();
+
+function calculateScore(){
+    return score + consecutive + Math.floor(level / 2)
+}
 
 
-var secondTestTrial = {
-  type: MOTMovement,
+var MOT = {
+  type: MOTAnimation
   // Include parameters as needed
 };
 
-var otherMOT = {
-  type: jsPsychMOT,
-  // Include parameters as needed
+
+    var trial = {
+      type: jsPsychHtmlKeyboardResponse,
+      stimulus: 'Hello. This is in a loop. Press "r" to repeat this trial, or "c" to continue.',
+      choices: ['r','c']
+    };
+
+    var after_loop_trial = {
+      type: jsPsychHtmlKeyboardResponse,
+      stimulus: 'This is the trial after the loop.'
+    };
+
+    var before_loop_trial = {
+      type: jsPsychHtmlKeyboardResponse,
+      stimulus: 'This is the trial before the loop.'
+    };
+
+    var feedbackScreen = {
+    type: jsPsychHtmlKeyboardResponse,
+    stimulus: function(){
+        var lastTrialCorrect = jsPsych.data.get().last(1).values()[0].win;
+        var totalCircleNumber = jsPsych.data.get().last(1).values()[0].totalCircles;
+        var flashingCircleNumber = jsPsych.data.get().last(1).values()[0].numberTargets;
+        var numberCorrectSelections = jsPsych.data.get().last(1).values()[0].numberCorrectSelections;
+        
+        var text = "You got " + numberCorrectSelections + " out of " + flashingCircleNumber + " correct!"
+        
+        if(lastTrialCorrect){
+            level = Math.min(level + 1, flashingBalls.length - 1);
+            consecutive += 1;
+            text += "<br> Moving up to level " + level + ".";
+             } 
+        else {
+            // If at least one flashing ball was not correctly selected, move to the level three previous
+            level = Math.max(level - 3, 0);
+            consecutive = Math.floor(consecutive / 2)  
+            text += "<br> Moving down to level " + level + "."; 
+             }
+
+        score = calculateScore();
+        text += "<br>Your score:" + score;
+        
+        return text
+        },
+    //choices: "NO_KEYS",  // No key press is allowed to end the trial
+    trial_duration: 3000,
+    data: function(){
+        return {
+            'score': score,
+            'level': level,
+            'consecutive': consecutive
+        }
+    }
+
 };
 
-/* create timeline */
-var timeline = [secondTestTrial];
+    var loop_node = {
+      timeline: [MOT, feedbackScreen],
+      loop_function: function(data){
+        console.log("One loop iteration finished.");
+        let currentTime = Date.now();
+        let elapsed = (currentTime - startTime) / 1000 / 60;  // elapsed time in minutes
+        console.log(elapsed);
+        return elapsed < 1;  // keep looping until 20 minutes have passed
+        } //js knows loop_function tells it when to stop
+    };
 
-var jsPsych = initJsPsych();
+    
 
-/* start the experiment */
-jsPsych.run(timeline);
+    jsPsych.run([loop_node, after_loop_trial]); 
 
-
-console.log("hello");
-  
-</script>
+  </script>
 </html>
