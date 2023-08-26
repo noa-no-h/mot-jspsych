@@ -6,16 +6,14 @@ var MOTAnimation = (function (jspsych) {
     description: 'Custom MOT-movement task plugin',
     parameters: {
       totalCircleNumber: {
-        type: jspsych.ParameterType.INT,
-        default: 3
+        type: jspsych.ParameterType.INT
       },
       secondsBeforeFlash: {
         type: jspsych.ParameterType.INT,
         default: 2
       },
       flashingCircleNumber: {
-        type: jspsych.ParameterType.INT,
-        default: 2
+        type: jspsych.ParameterType.INT
       },
       flashingSeconds: {
         type: jspsych.ParameterType.INT,
@@ -30,8 +28,7 @@ var MOTAnimation = (function (jspsych) {
         default: 5
       },
       speed: {
-        type: jspsych.ParameterType.INT,
-        default: 2
+        type: jspsych.ParameterType.INT
       },
       milisecondsFixationCross: {
         type: jspsych.ParameterType.INT,
@@ -56,6 +53,9 @@ var MOTAnimation = (function (jspsych) {
     }
   };
 
+  
+
+
   class MOTAnimation {
     constructor(jsPsych) {
         this.jsPsych = jsPsych;
@@ -67,9 +67,15 @@ var MOTAnimation = (function (jspsych) {
     let alreadySetPhase = false;
     let alreadyCheckedTimeOfQuestion = false;
     let correctSelections = 0;
+    var totalNumberOfCircles = trial.totalCircleNumber;
+    var numberOfFlashingCircles = trial.flashingCircleNumber;
+    var speedOfMovement = trial.speed;
     //i put the parameter let circles = createCircles(); below because it 
     //needs to go after the circle class is defined
 
+    //console.log("totalCircleNumber" + trial.totalCircleNumber)
+    //console.log("flashingCircleNumber" + numberOfFlashingCircles)
+    //console.log("speed" + speedOfMovement)
 
     // Create and append canvas
     const canvas = document.createElement('canvas');
@@ -139,14 +145,14 @@ var MOTAnimation = (function (jspsych) {
         let circles = [];
 
     // Create distractor balls
-    for (let i = 0; i < trial.totalCircleNumber - trial.flashingCircleNumber; i++) {
+    for (let i = 0; i < totalNumberOfCircles - numberOfFlashingCircles; i++) {
         let newCircle;
         do {
             newCircle = new Circle(
                 trial.circleRadius + Math.random() * (canvas.width - 2 * trial.circleRadius),
                 trial.circleRadius + Math.random() * (canvas.height - 2 * trial.circleRadius),
-                1 + Math.random() * trial.speed,
-                1 + Math.random() * trial.speed,
+                1 + Math.random() * speedOfMovement,
+                1 + Math.random() * speedOfMovement,
                 "white",
                 trial.circleRadius
             );
@@ -155,14 +161,14 @@ var MOTAnimation = (function (jspsych) {
     }
 
     // Create flashing balls
-    for (let i = 0; i < trial.flashingCircleNumber; i++) {
+    for (let i = 0; i < numberOfFlashingCircles; i++) {
         let newCircle;
         do {
             newCircle = new Circle(
                 trial.circleRadius + Math.random() * (canvas.width - 2 * trial.circleRadius),
                 trial.circleRadius + Math.random() * (canvas.height - 2 * trial.circleRadius),
-                1 + Math.random() * trial.speed,
-                1 + Math.random() * trial.speed,
+                1 + Math.random() * speedOfMovement,
+                1 + Math.random() * speedOfMovement,
                 "green",
                 trial.circleRadius
             );
@@ -219,7 +225,7 @@ var MOTAnimation = (function (jspsych) {
     let hoveredCircle = null;
     function canvasClickHandler(event) {
     if (phase === 'question') {
-        console.log("in canvasClickHandler")
+        //console.log("in canvasClickHandler")
         let rect = canvas.getBoundingClientRect();
         let mouseX = event.clientX - rect.left;
         let mouseY = event.clientY - rect.top;
@@ -234,7 +240,7 @@ var MOTAnimation = (function (jspsych) {
             selectedQueue = selectedQueue.filter(c => c !== circle);
             } else {
             // If the circle is not selected, select it and add it to the queue
-            if (selectedQueue.length === trial.flashingCircleNumber) {
+            if (selectedQueue.length === numberOfFlashingCircles) {
                 // If there are already n circles in the queue, where n is the level's number of flashingBalls,
                 // deselect and remove the first one
                 selectedQueue[0].isSelected = false;
@@ -250,7 +256,7 @@ var MOTAnimation = (function (jspsych) {
 
     function keydownHandler(event) {
         if (phase === 'question' && event.key === " ") {
-            console.log("in keydownHandler")
+            //console.log("in keydownHandler")
             // Count correct circle selections and proceed to phase 4
             //correctSelections = 0 //global
             let totalSelections = 0;
@@ -260,11 +266,11 @@ var MOTAnimation = (function (jspsych) {
                 }
                 if (circle.origcolor === "green" && circle.isSelected) {
                     correctSelections += 1;
-                    console.log("the following circle was correctly selected: " + i)
+                    //console.log("the following circle was correctly selected: " + i)
                 }
             };
     
-            if (totalSelections < trial.flashingCircleNumber){
+            if (totalSelections < numberOfFlashingCircles){
                 showSelectMoreText = true; //this will have its effect in the game loop part for phase 5
                 
             }
@@ -276,7 +282,7 @@ var MOTAnimation = (function (jspsych) {
     }
     function canvasMouseMoveHandler(event) {
     if (phase === 'question') {
-        console.log("in canvasMouseMoveHandler")
+        //console.log("in canvasMouseMoveHandler")
         let rect = canvas.getBoundingClientRect();
         let mouseX = event.clientX - rect.left;
         let mouseY = event.clientY - rect.top;
@@ -293,7 +299,7 @@ var MOTAnimation = (function (jspsych) {
         if (Math.sqrt(dx * dx + dy * dy) <= trial.circleRadius) {
             // Set this circle as the currently hovered circle and change its color
             hoveredCircle = circle;
-            console.log("in canvasMouseMoveHandler. hoveredCircle is " + hoveredCircle)
+            //console.log("in canvasMouseMoveHandler. hoveredCircle is " + hoveredCircle)
             hoveredCircle.color = 'teal';
         }
         });
@@ -336,9 +342,9 @@ var MOTAnimation = (function (jspsych) {
 
             drawCross();
 
-            console.log('in TrialLoop. phase is ' + phase + 
-        ' trial.milisecondsFixationCross is ' + trial.milisecondsFixationCross + 
-        'phaseStartTime - performance.now() is ' + (performance.now() - phaseStartTime));
+            //console.log('in TrialLoop. phase is ' + phase + 
+        //' trial.milisecondsFixationCross is ' + trial.milisecondsFixationCross + 
+        //'phaseStartTime - performance.now() is ' + (performance.now() - phaseStartTime));
 
             if (performance.now() - phaseStartTime > trial.milisecondsFixationCross){
                 phase = 'circlesAndCross';
@@ -349,7 +355,7 @@ var MOTAnimation = (function (jspsych) {
 
         if (phase == 'circlesAndCross'){
 
-            console.log("in circlesAndCross")
+            //console.log("in circlesAndCross")
 
             circles.forEach((circle) => {
                 circle.color = "black";
@@ -385,7 +391,7 @@ var MOTAnimation = (function (jspsych) {
 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            console.log("in motion")
+            //console.log("in motion")
 
             circleCollision();
             circleBounce();
@@ -431,7 +437,7 @@ var MOTAnimation = (function (jspsych) {
             // Your text, split into lines
             var text = "Select the circles you've been tracking by clicking on them.\nPress space to submit your selection.";
             if (showSelectMoreText === true) {
-                text += "\nPlease select at least " + trial.flashingCircleNumber + " circles to proceed.";
+                text += "\nPlease select at least " + numberOfFlashingCircles + " circles to proceed.";
             }
 
             // Calculate the starting y-position
@@ -461,10 +467,10 @@ var MOTAnimation = (function (jspsych) {
       // Perform any cleanup or data collection here
       var trial_data = {
         "reactionTime": timeOfResponse - timeOfQuestion,
-        "totalCircles": trial.totalCircleNumber,
-        "numberTargets": trial.flashingCircleNumber,
+        "totalCircles": totalNumberOfCircles,
+        "numberTargets": numberOfFlashingCircles,
         "numberCorrectSelections": correctSelections,
-        "win": correctSelections == trial.flashingCircleNumber
+        "win": correctSelections == numberOfFlashingCircles
         };
 
 

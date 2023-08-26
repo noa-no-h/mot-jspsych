@@ -66,7 +66,7 @@ let practice = true;
 let timesLooped = -1
 let consecutive = 0;
 let score = 0;
-let startTime = Date.now();
+let startTime;
 
 function calculateScore(){
     return score + consecutive + Math.floor(level / 2)
@@ -140,11 +140,25 @@ circleInstructions = {
 
 var MOT = {
   type: MOTAnimation,
-  totalCircleNumber: flashingBalls[level] + distractorBalls[level],
+  totalCircleNumber: parseInt(flashingBalls[level]) + parseInt(distractorBalls[level]),
   flashingCircleNumber: flashingBalls[level],
   speed: speeds[level],
-  // Include parameters as needed
+  data: {level: level},
 };
+
+var printInfo = {
+    type: jsPsychCallFunction,
+    func: function(){
+        console.log("level: " + level)
+        console.log("totalCircleNumber: " + parseInt(flashingBalls[level]) + parseInt(distractorBalls[level]))
+        console.log("flashingCircleNumber: " + flashingBalls[level])
+        console.log("speed: " + speeds[level])
+        console.log("typeOfLevel: " + typeof level)
+        console.log("typeOfFlashingBalls[level]: " + typeof flashingBalls[level])
+        console.log("typeOfDistractorBalls[level]: " + typeof distractorBalls[level])
+        console.log("typeOfSpeeds[level]: " + typeof speeds[level])
+    }
+}
 
 
 var feedbackScreen = {
@@ -188,7 +202,37 @@ var feedbackScreen = {
 
 };
 
-var generalSurvey = {
+// end of guide instructions
+endOfGuideInstructions = {
+  type: jsPsychHtmlButtonResponse,
+  stimulus: "<p>The guide is now complete, and you will move to practice rounds, where you will go through the " +
+        "experiment in normal order, but your answers will not be recorded. After the practice is finished, "+
+        "you will move to the real experiments where your responses will be recorded."+
+         "Click 'Next' to move to the practice rounds.<p>",
+  choices: ['Next']
+};
+
+endOfPracticeInstructions = {
+  type: jsPsychHtmlButtonResponse,
+  stimulus: "<p>The practice is now over.</p>" +
+            "<p>Click 'Next' when you are ready to continue to the real experiment.</p>" +
+            "<p>Remember to keep track of the targets and submit your result by pressing the SPACEBAR.</p>" +
+            "<p>Be as quick and accurate as you can!</p>" +
+            "<p>Click 'Next' to continue.</p>",
+  choices: ['Next'],
+  on_finish: function(data) {
+    level = 0;
+    startTime = Date.now();
+    practice = false;
+    score = 0;
+    console.log("Practice finished!" + practice);
+
+  }
+};
+
+
+// Defining questionnaire trials
+var questionnaire = {
   type: jsPsychSurvey,
   pages: [
     [
@@ -198,29 +242,66 @@ var generalSurvey = {
       },
       {
         type: 'multi-choice',
-        prompt: "What year are you in the ATC program:", 
-        name: 'year', 
-        options: ['Freshman', 'Sophomore', 'Junior','Senior','Alumni'], 
-        required: true
-      }, 
+        prompt: 'What year are you in the ATC program:',
+        options: ['Freshman', 'Sophomore', 'Junior', 'Senior', 'Alumni'],
+      },
       {
         type: 'text',
-        prompt: "At what age (approximately) did you first begin ATC instruction?", 
-        required: true
+        prompt: 'At what age (approximately) did you first begin ATC instruction?',
+      },
+      {
+        type: 'text',
+        prompt: 'What positions have you been trained in? Please include for each position the airport location, mission location, or simulator used when detailing your experience with each position as well as the number of years you have actively engaged in performing this position for each.',
+      },
+      {
+        type: 'text',
+        prompt: 'Approximately how many hours do you spend doing Position 1 per week?',
+      },
+      {
+        type: 'text',
+        prompt: 'Approximately how many hours do you spend doing Position 2 per week?',
+      },
+      {
+        type: 'text',
+        prompt: 'Approximately how many hours do you spend doing Position 3 per week?',
+      },
+      {
+        type: 'text',
+        prompt: 'Approximately how many hours do you spend doing Position 4 per week?',
+      },
+      {
+        type: 'text',
+        prompt: 'How would you rate your performance in AMT 182: Private Pilot Ground School?',
+      },
+      {
+        type: 'text',
+        prompt: 'How would you rate your performance in AMT 201: Air Traffic Control?',
+      },
+      {
+        type: 'multi-choice',
+        prompt: 'Which of the following do you prefer the most?',
+        options: ['Tower', 'TRACON', 'Center'],
+      },
+      {
+        type: 'text',
+        prompt: 'Out of the options included in the question above, which do you find more difficult/easier than the others? What do you consider to be the most difficult part? Phraseology? Maps? Rules/procedures?',
       }
     ]
-  ],
+  ]
 };
 
-var positionsQuestions = {
-  type: jsPsychSurveyHtmlForm,
-  preamble: '<p>What positions have you been trained in? </b> Please include for each position the airport location, </b> mission location, or simulator used when detailing your experience with </b> each position as well as the number of years you have actively engaged in</b>performing this position for each. </p>',
-  html: '<p> I am feeling <input name="first" type="text" />, <input name="second" type="text" />, and <input name="third" type="text" />.</p>'
-};
+var practiceTrials = {
+    timeline: [MOT, feedbackScreen],
+    data: { practice: practice }
+}
+
+
+
 
 // Looping timeline
 var loopTimeline = {
-  timeline: [MOT, feedbackScreen],
+  timeline: [printInfo,MOT, feedbackScreen],
+  
   loop_function: function(data){
     console.log("One loop iteration finished.");
     let currentTime = Date.now();
@@ -234,9 +315,14 @@ var loopTimeline = {
 
 // Initialize the experiment with a timeline
 
-var fullTimeline = [loopTimeline];
+/*var fullTimeline = [enter_fullscreen,  questionnaire, firstInstructions, 
+                    crossInstructions, circleInstructions, 
+                    MOT, feedbackScreen, endOfGuideInstructions,
+                    practiceTrials, practiceTrials, endOfPracticeInstructions,
+                    loopTimeline, exit_fullscreen];*/
 
-//timeline = [firstInstructions, crossInstructions, circleInstructions, MOT, feedbackScreen]
+var fullTimeline = [endOfPracticeInstructions, loopTimeline]
+
 
 
 /* start the experiment */
