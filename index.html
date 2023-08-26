@@ -138,12 +138,20 @@ circleInstructions = {
 };
 
 
-var MOT = {
+/*var MOT = {
   type: MOTAnimation,
   totalCircleNumber: parseInt(flashingBalls[level]) + parseInt(distractorBalls[level]),
   flashingCircleNumber: flashingBalls[level],
   speed: speeds[level],
   data: {level: level},
+};*/
+
+var MOT = {
+  type: MOTAnimation,
+  totalCircleNumber: function() { return parseInt(flashingBalls[level]) + parseInt(distractorBalls[level]); },
+  flashingCircleNumber: function() { return flashingBalls[level]; },
+  speed: function() { return speeds[level]; },
+  data: function() { return {level: level, practice: practice}; }
 };
 
 var printInfo = {
@@ -292,7 +300,7 @@ var questionnaire = {
 
 var practiceTrials = {
     timeline: [MOT, feedbackScreen],
-    data: { practice: practice }
+    //data: function() { return {practice: practice}; }
 }
 
 
