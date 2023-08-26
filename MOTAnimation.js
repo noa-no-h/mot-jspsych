@@ -240,7 +240,7 @@ var MOTAnimation = (function (jspsych) {
             selectedQueue = selectedQueue.filter(c => c !== circle);
             } else {
             // If the circle is not selected, select it and add it to the queue
-            if (selectedQueue.length === numberOfFlashingCircles) {
+            if (selectedQueue.length == numberOfFlashingCircles) {
                 // If there are already n circles in the queue, where n is the level's number of flashingBalls,
                 // deselect and remove the first one
                 selectedQueue[0].isSelected = false;
@@ -416,6 +416,9 @@ var MOTAnimation = (function (jspsych) {
                 circle.draw(ctx);
                 if (circle.isSelected) {
                   circle.color = "red";
+                }
+                else{
+                  circle.color = "black";
                 }
               });
 
