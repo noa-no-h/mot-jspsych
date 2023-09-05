@@ -389,6 +389,9 @@ var MOTAnimation = (function (jspsych) {
 
         if (phase == 'motion'){
 
+            document.documentElement.style.cursor = 'none';
+
+
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             //console.log("in motion")
@@ -410,6 +413,8 @@ var MOTAnimation = (function (jspsych) {
         }
 
         if (phase == 'question'){
+            document.documentElement.style.cursor = 'auto';
+
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             circles.forEach((circle) => {
