@@ -130,9 +130,10 @@ crossInstructions = {
 // circle instructions
 circleInstructions = {
   type: jsPsychHtmlButtonResponse,
-  stimulus: "<p>Now, " + (flashingBalls[level] + distractorBalls[level]) + " circles will appear randomly around the screen. " + flashingBalls[level] + " random "
-    + "circles will flash briefly. Remember which circles flashed. The cross will disappear, and all circles " +
-    "will start moving when the flashing stops.Click next when you are ready to continue. </p>" +
+  stimulus: "<p>Now, " + (flashingBalls[level] + distractorBalls[level]) + " circles will appear randomly around the screen. " + 
+    "<p>" + flashingBalls[level] + " random  circles will flash briefly. Remember which circles flashed.<p>"+
+    "<p> The cross will disappear, and all circles will start moving when the flashing stops.<p>" +
+    "<p>Click next when you are ready to continue. </p>" +
             '<p style="font-size:48px;">+</p>',
   choices: ['Next']
 };
@@ -214,9 +215,9 @@ var feedbackScreen = {
 endOfGuideInstructions = {
   type: jsPsychHtmlButtonResponse,
   stimulus: "<p>The guide is now complete, and you will move to practice rounds, where you will go through the " +
-        "experiment in normal order, but your answers will not be recorded. After the practice is finished, "+
-        "you will move to the real experiments where your responses will be recorded."+
-         "Click 'Next' to move to the practice rounds.<p>",
+        "experiment in normal order, but your answers will not be recorded.<p>"+
+        "<p> After the practice is finished, you will move to the real experiments where your responses will be recorded.<p>"+
+         "<p>Click 'Next' to move to the practice rounds.<p>",
   choices: ['Next']
 };
 
