@@ -184,15 +184,18 @@ var MOTAnimation = (function (jspsych) {
 
     //Function to check for collisions between circles and canvas bounds
     function circleCollision() {
+        const offsetUpDown = 20;
+        const offsetSideSide = 70;
         circles.forEach((circle) => {
-          if (circle.x + circle.dx < trial.circleRadius || circle.x + circle.dx > canvas.width - trial.circleRadius) {
+          if (circle.x + circle.dx < trial.circleRadius + offsetSideSide || circle.x + circle.dx > canvas.width - trial.circleRadius - offsetSideSide) {
             circle.dx = -circle.dx;
           }
-          if (circle.y + circle.dy < trial.circleRadius || circle.y + circle.dy > canvas.height - trial.circleRadius) {
+          if (circle.y + circle.dy < trial.circleRadius + offsetUpDown || circle.y + circle.dy > canvas.height - trial.circleRadius - offsetUpDown) {
             circle.dy = -circle.dy;
           }
         });
-      }      
+      }
+       
 
     function circleBounce() {
     for (let i = 0; i < circles.length; i++) {
