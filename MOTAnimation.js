@@ -149,8 +149,8 @@ var MOTAnimation = (function (jspsych) {
         let newCircle;
         do {
             newCircle = new Circle(
-                trial.circleRadius + Math.random() * (canvas.width - 2 * trial.circleRadius),
-                trial.circleRadius + Math.random() * (canvas.height - 2 * trial.circleRadius),
+                trial.circleRadius + Math.random() * (canvas.width - 20 * trial.circleRadius),
+                trial.circleRadius + Math.random() * (canvas.height - 20 * trial.circleRadius),
                 1 + Math.random() * speedOfMovement,
                 1 + Math.random() * speedOfMovement,
                 "white",
@@ -165,8 +165,8 @@ var MOTAnimation = (function (jspsych) {
         let newCircle;
         do {
             newCircle = new Circle(
-                trial.circleRadius + Math.random() * (canvas.width - 2 * trial.circleRadius),
-                trial.circleRadius + Math.random() * (canvas.height - 2 * trial.circleRadius),
+                trial.circleRadius + Math.random() * (canvas.width - 20 * trial.circleRadius),
+                trial.circleRadius + Math.random() * (canvas.height - 20 * trial.circleRadius),
                 1 + Math.random() * speedOfMovement,
                 1 + Math.random() * speedOfMovement,
                 "green",
@@ -503,7 +503,6 @@ var MOTAnimation = (function (jspsych) {
   }
 }
 
-  // Define your other functions here
   MOTAnimation.info = info;
   return MOTAnimation;
 })(jsPsychModule);
